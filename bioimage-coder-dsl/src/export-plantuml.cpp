@@ -5,11 +5,16 @@
 #include <chrono>
 #include <tuple>
 
-#include "main_protocol.hpp"
+#ifndef BIOIMAGE_CODER_PROTOCOL_HEADER
+#define BIOIMAGE_CODER_PROTOCOL_HEADER "main_protocol.hpp"
+#endif
+
+#include BIOIMAGE_CODER_PROTOCOL_HEADER
 
 using bioimage_coder::is_repeat_for_v;
 using bioimage_coder::Range;
 using bioimage_coder::repeat_for;
+using bioimage_coder::repeat_for_t;
 using fiber_messages::capture::dark_frame_t;
 using fiber_messages::capture::fluorescence_frame_t;
 using fiber_messages::capture::fpm_frame_t;
@@ -90,28 +95,34 @@ void
 drawActivity(const color_t& c) {
     fmt::print(FMT_STRING(":Set LED color = {:c};\n"), char(c));
 }
+
+template <char Symbol, typename Integer, class Callable>
+void
+drawActivity(const repeat_for_t<Symbol, Integer, Callable>& repeat_command) {
+    fmt::print(FMT_STRING(":{:c} = {:d};\nrepeat\n"), decltype(repeat_command.range)::symbol,
+               repeat_command.range.begin);
+
+    std::apply([](auto&&... command) { (drawActivity(command), ...); },
+               repeat_command.steps(repeat_command.range.begin));
+
+    using namespace fmt::literals;
+    fmt::print(R"(backward:{symbol:c} += {step:d};
+repeat while ({symbol:c} < {end:d}?) is (yes)
+->(no);
+)",
+               "symbol"_a = decltype(repeat_command.range)::symbol,
+               "step"_a = repeat_command.range.step, "end"_a = repeat_command.range.end);
+}
+
 /** Black magic to dispatch commands in the tuple structure. */
 template <typename Protocol, size_t index = 0>
 constexpr void
 drawPlantuml(Protocol&& p) {
     if constexpr (index < std::tuple_size_v<std::remove_reference_t<Protocol>>) {
         auto&& sub_protocol = std::get<index>(std::forward<Protocol>(p));
-
         using T = std::decay_t<decltype(sub_protocol)>;
         if constexpr (is_repeat_for_v<T>) {
-            fmt::print(FMT_STRING(":{:c} = {:d};\nrepeat\n"), decltype(sub_protocol.range)::symbol,
-                       sub_protocol.range.begin);
-
-            std::apply([](auto&&... command) { (drawActivity(command), ...); },
-                       sub_protocol.steps(123));
-
-            using namespace fmt::literals;
-            fmt::print(R"(backward:{symbol:c} += {step:d};
-repeat while ({symbol:c} < {end:d}?) is (yes)
-->(no);
-)",
-                       "symbol"_a = decltype(sub_protocol.range)::symbol,
-                       "step"_a = sub_protocol.range.step, "end"_a = sub_protocol.range.end);
+            drawActivity(sub_protocol);
         } else {
             std::apply([](auto&&... command) { (drawActivity(command), ...); }, sub_protocol);
         }

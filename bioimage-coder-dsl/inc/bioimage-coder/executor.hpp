@@ -42,6 +42,9 @@ struct has_completion_channel : std::false_type {};
 template <typename T>
 struct has_completion_channel<T, std::void_t<decltype(T{}.completion)>> : std::true_type {};
 
+template <char Symbol, typename Integer, class Callable>
+constexpr void dispatch(const repeat_for_t<Symbol, Integer, Callable>& command);
+
 /** Dispatch the steps in Bioimage Coder DSL to the corresponding message
  * handlers.
  *
@@ -109,6 +112,15 @@ dispatch(const T& command) {
     }
 }
 
+template <char Symbol, typename Integer, class Callable>
+constexpr void
+dispatch(const repeat_for_t<Symbol, Integer, Callable>& command) {
+    for (auto i = command.range.begin; i < command.range.end; i += command.range.step) {
+        std::apply([](auto&&... nested_command) { (dispatch(nested_command), ...); },
+                   command.steps(i));
+    }
+}
+
 /** Black magic to dispatch commands in the tuple structure. */
 template <typename Protocol, size_t index = 0>
 constexpr void
@@ -134,4 +146,4 @@ execute(Protocol&& p) {
         execute<Protocol, index + 1>(std::forward<Protocol>(p));
     }
 }
-}
+}  // namespace bioimage_coder
