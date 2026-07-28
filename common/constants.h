@@ -32,9 +32,3 @@ toString(channel_t ch) {
             return "NIL";
     }
 }
-
-/** Syntactic function for micrometer unit. */
-constexpr int16_t
-operator""_um(unsigned long long v) {
-    return v;
-}

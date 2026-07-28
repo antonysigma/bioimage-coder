@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "constants.h"
+#include "units.h"
 
 namespace message {
 
@@ -44,7 +45,7 @@ constexpr auto laser_off = laser{1s, 0, EGFP};
 namespace motion {
 
 struct move_to_z {
-    int16_t value;
+    units::Micron<> position;
 };
 
 }  // namespace motion

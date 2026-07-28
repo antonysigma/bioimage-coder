@@ -27,11 +27,11 @@ namespace {
 
 constexpr auto GREEN_LED = color_t::G;
 constexpr auto
-brightfieldImagingProtocol(const int16_t z) {
+brightfieldImagingProtocol(const units::Micron<> z) {
     return Steps{
-        move_to_z{z},                                         // Move to stage position
-        SleepFor{500ms},                                      // Wait for the z-stage to settle
-        fluorescence_frame_t{static_cast<uint8_t>(z + 128)},  // Capture frames
+        move_to_z{z},     // Move to stage position
+        SleepFor{500ms},  // Wait for the z-stage to settle
+        fluorescence_frame_t{static_cast<uint8_t>(z.value + 128)},  // Capture frames
     };
 }
 
@@ -52,17 +52,17 @@ mainProtocol() {
         // matrix, not all wells on the 96-well plate can be illuminated with
         // on-axis LEDs.
         Steps{
-            led_at{0, 0},  // Switch on LED
-            move_to_z{0},  // Move to neutral position
+            led_at{0, 0},     // Switch on LED
+            move_to_z{0_um},  // Move to neutral position
         },
 
-        repeat_for(Range<'z', int16_t>{-4_um, 4_um, 2_um}, brightfieldImagingProtocol),  //
+        repeat_for(Range<'z', units::Micron<>>{-4_um, 4_um, 2_um}, brightfieldImagingProtocol),  //
 
         // De-init all devices
         Steps{
             CloseAllCameraWorkers{},  // Closes all file writers
             laser_off,                //
-            move_to_z{0}              // Move z-stage to neutral position
+            move_to_z{0_um}           // Move z-stage to neutral position
         }  //
     };
 }

@@ -5,6 +5,8 @@
 #include <chrono>
 #include <tuple>
 
+#include "units.h"
+
 #ifndef BIOIMAGE_CODER_PROTOCOL_HEADER
 #define BIOIMAGE_CODER_PROTOCOL_HEADER "main_protocol.hpp"
 #endif
@@ -25,6 +27,18 @@ using message::SleepFor;
 using led_at = message::led_matrix::switch_to;
 
 namespace {
+
+template <typename T>
+constexpr const T&
+value_of(const T& value) {
+    return value;
+}
+
+template <typename T>
+constexpr const T&
+value_of(const units::Micron<T>& value) {
+    return value.value;
+}
 
 void
 drawActivity(const dark_frame_t&) {
@@ -63,7 +77,7 @@ drawActivity(const SleepFor& s) {
 
 void
 drawActivity(const move_to_z& m) {
-    fmt::print(FMT_STRING(":Move to z = {:d} um;\n"), m.value);
+    fmt::print(FMT_STRING(":Move to z = {:d} um;\n"), m.position.value);
 }
 
 void
@@ -100,7 +114,7 @@ template <char Symbol, typename Integer, class Callable>
 void
 drawActivity(const repeat_for_t<Symbol, Integer, Callable>& repeat_command) {
     fmt::print(FMT_STRING(":{:c} = {:d};\nrepeat\n"), decltype(repeat_command.range)::symbol,
-               repeat_command.range.begin);
+               value_of(repeat_command.range.begin));
 
     std::apply([](auto&&... command) { (drawActivity(command), ...); },
                repeat_command.steps(repeat_command.range.begin));
@@ -111,7 +125,8 @@ repeat while ({symbol:c} < {end:d}?) is (yes)
 ->(no);
 )",
                "symbol"_a = decltype(repeat_command.range)::symbol,
-               "step"_a = repeat_command.range.step, "end"_a = repeat_command.range.end);
+               "step"_a = value_of(repeat_command.range.step),
+               "end"_a = value_of(repeat_command.range.end));
 }
 
 /** Black magic to dispatch commands in the tuple structure. */

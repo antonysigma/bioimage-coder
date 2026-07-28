@@ -53,13 +53,13 @@ fpmImagingProtocol(const uint8_t led_id) {
 }
 
 constexpr auto
-fluorescenceImagingProtocol(const int16_t z) {
+fluorescenceImagingProtocol(const units::Micron<> z) {
     return Steps{
-        move_to_z{z},                   // Move to stage position
-        laser{1s, 16, EGFP},            // Turn on laser EGFP
-        fluorescence_frame_t{z, EGFP},  // Capture fluorescence images
-        laser{1s, 16, TXRED},           // Turn on laser TXRED
-        fluorescence_frame_t{z, TXRED}  // Capture fluorescence images
+        move_to_z{z},                         // Move to stage position
+        laser{1s, 16, EGFP},                  // Turn on laser EGFP
+        fluorescence_frame_t{z.value, EGFP},  // Capture fluorescence images
+        laser{1s, 16, TXRED},                 // Turn on laser TXRED
+        fluorescence_frame_t{z.value, TXRED}  // Capture fluorescence images
     };
 }
 
@@ -75,7 +75,7 @@ mainProtocol() {
             blank{},                      //
             dark_frame_t{},               //
             led_at{0, 0},                 // Switch on LED
-            move_to_z{0},                 // Move to neutral position
+            move_to_z{0_um},              // Move to neutral position
             EG::setExposureGain<1>(30ms)  // Expose for 30 millisecond at 1x analog gain.
         },
 
@@ -86,13 +86,13 @@ mainProtocol() {
             blank{},                        // Turn off LED.
             EG::setExposureGain<16>(200ms)  // Expose for 100 millisecond at 16x analog gain.
         },
-        repeat_for(Range<'z', int16_t>{-4, 4, 2}, fluorescenceImagingProtocol),  //
+        repeat_for(Range<'z', units::Micron<>>{-4_um, 4_um, 2_um}, fluorescenceImagingProtocol),  //
 
         // De-init all devices
         Steps{
             CloseAllCameraWorkers{},  // Closes all file writers
             laser_off,                //
-            move_to_z{0}              // Move z-stage to neutral position
+            move_to_z{0_um}           // Move z-stage to neutral position
         }  //
     };
 }
