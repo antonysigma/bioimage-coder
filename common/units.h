@@ -1,4 +1,6 @@
 #pragma once
+#include <fmt/format.h>
+
 #include <cstdint>
 
 namespace units {
@@ -61,3 +63,20 @@ operator-=(Micron<T>& lhs, Micron<T> rhs) {
 }  // namespace units
 
 using units::operator""_um;
+
+namespace fmt {
+
+template <typename T>
+struct formatter<units::Micron<T>> {
+    fmt::formatter<T> value_formatter{};
+
+    constexpr auto parse(format_parse_context& ctx) { return value_formatter.parse(ctx); }
+
+    template <typename FormatContext>
+    auto format(const units::Micron<T>& m, FormatContext& ctx) const {
+        auto out = value_formatter.format(m.value, ctx);
+        return fmt::format_to(out, FMT_STRING(" um"));
+    }
+};
+
+}  // namespace fmt

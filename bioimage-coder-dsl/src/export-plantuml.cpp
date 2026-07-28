@@ -28,17 +28,39 @@ using led_at = message::led_matrix::switch_to;
 
 namespace {
 
-template <typename T>
-constexpr const T&
-value_of(const T& value) {
-    return value;
-}
+struct ActiveLoopDims {
+    static constexpr size_t capacity = 5;
+    std::array<char, capacity> dimensions{};
+    size_t size{0};
 
-template <typename T>
-constexpr const T&
-value_of(const units::Micron<T>& value) {
-    return value.value;
-}
+    constexpr bool push_back(const char c) {
+        if (size >= capacity) {
+            return false;
+        }
+
+        dimensions[size++] = c;
+        return true;
+    }
+
+    constexpr void pop_back() {
+        size = std::max(0UL, size - 1);
+    }
+
+    constexpr bool has(const char c) const {
+        if (c == '\0') {
+            return false;
+        }
+
+        for (const auto& d : dimensions) {
+            if (c == d) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+static ActiveLoopDims active_loop_dims{};
 
 void
 drawActivity(const dark_frame_t&) {
@@ -77,7 +99,12 @@ drawActivity(const SleepFor& s) {
 
 void
 drawActivity(const move_to_z& m) {
-    fmt::print(FMT_STRING(":Move to z = {:d} um;\n"), m.position.value);
+    if (active_loop_dims.has('z')) {
+        fmt::print(":Move to z = ? um;\n");
+        return;
+    }
+
+    fmt::print(FMT_STRING(":Move to z = {};\n"), m.position);
 }
 
 void
@@ -97,6 +124,11 @@ drawActivity(const blank&) {
 
 void
 drawActivity(const led_at& l) {
+    if (active_loop_dims.has('i')) {
+        fmt::print(":Turn on LED at (x_i, y_i);\n");
+        return;
+    }
+
     fmt::print(FMT_STRING(":Turn on LED at (x, y) = ({:d}, {:d});\n"), l.x, l.y);
 }
 
@@ -113,11 +145,17 @@ drawActivity(const color_t& c) {
 template <char Symbol, typename Integer, class Callable>
 void
 drawActivity(const repeat_for_t<Symbol, Integer, Callable>& repeat_command) {
-    fmt::print(FMT_STRING(":{:c} = {:d};\nrepeat\n"), decltype(repeat_command.range)::symbol,
-               value_of(repeat_command.range.begin));
+    constexpr auto symbol = decltype(repeat_command.range)::symbol;
+    fmt::print(FMT_STRING(":{:c} = {};\nrepeat\n"), symbol, repeat_command.range.begin);
 
+    const auto success = active_loop_dims.push_back(symbol);
+    if (!success) {
+        std::runtime_error(
+            fmt::format(FMT_STRING("Reaching max nested level {:d}"), ActiveLoopDims::capacity));
+    }
     std::apply([](auto&&... command) { (drawActivity(command), ...); },
                repeat_command.steps(repeat_command.range.begin));
+    active_loop_dims.pop_back();
 
     using namespace fmt::literals;
     fmt::print(R"(backward:{symbol:c} += {step:d};
@@ -125,8 +163,7 @@ repeat while ({symbol:c} < {end:d}?) is (yes)
 ->(no);
 )",
                "symbol"_a = decltype(repeat_command.range)::symbol,
-               "step"_a = value_of(repeat_command.range.step),
-               "end"_a = value_of(repeat_command.range.end));
+               "step"_a = repeat_command.range.step, "end"_a = repeat_command.range.end);
 }
 
 /** Black magic to dispatch commands in the tuple structure. */

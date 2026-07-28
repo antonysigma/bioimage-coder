@@ -7,6 +7,6 @@ namespace message_router {
 template <class S>
 void
 MessageOverSerial<S>::sendCommand(motion::move_to_z z) {
-    impl::executeCommand(serial, "z {:d}\n", z.position.value);
+    impl::executeCommand(serial, "z {}\n", z.position);
 }
 }  // namespace message_router
