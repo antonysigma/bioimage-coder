@@ -11,6 +11,10 @@ mock_usb_lib = static_library('mock_usb',
     ]
 )
 
+mock_serial_dep = declare_dependency(
+    include_directories: 'inc',
+)
+
 mock_usb_dep = declare_dependency(
     link_with: mock_usb_lib,
     include_directories: 'inc',

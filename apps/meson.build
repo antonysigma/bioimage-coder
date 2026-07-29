@@ -11,6 +11,7 @@ capture_images_exe = executable('capture-images',
         '-march=native',
         '-ffunction-sections',
         '-fdata-sections',
+        '-DMOCK_SERIAL',
     ],
     link_args: [
         '-Wl,-gc-sections',
@@ -21,6 +22,7 @@ capture_images_exe = executable('capture-images',
         fmt_dep,
         bioimage_coder_dsl_dep,
         threads_dep,
+        mock_serial_dep,
     ],
 )
 

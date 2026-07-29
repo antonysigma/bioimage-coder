@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "messages.h"
 
 /** Command serialization over serial port. */
@@ -26,7 +28,7 @@ class MessageOverSerial {
     SerialInterface& serial;
 
    public:
-    MessageOverSerial(SerialInterface&);
+    inline MessageOverSerial(SerialInterface& s) : serial{s} {}
 
     MessageOverSerial(const MessageOverSerial&) = delete;
     MessageOverSerial(MessageOverSerial&&) = delete;

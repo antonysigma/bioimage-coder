@@ -15,11 +15,18 @@
 #include "message_router.h"
 #include "messages.h"
 
+#ifdef MOCK_SERIAL
+#include "mock_serial.h"
+using serial_port_t = hardware_drivers::MockSerial;
+#else
+using serial_port_t = asio::serial_port;
+#endif
+
 /** Dependency injection (DI) of the serial port at link-time.
  *
  * @todo to be refactored into compile-time DI via C++ template metaprogramming.
  */
-extern asio::serial_port serial_port;
+extern serial_port_t serial_port;
 
 /** Dependency injection (DI) of the capture command queue at link-time.
  *

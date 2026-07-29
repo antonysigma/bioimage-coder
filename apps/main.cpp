@@ -6,14 +6,20 @@
 #include "file_write_worker.h"
 #include "image_capture_worker.h"
 #include "master_task.h"
+#include "message_router.h"
 
 using boost::fibers::barrier;
 using boost::fibers::fiber;
 
+#ifdef MOCK_SERIAL
+#include "mock_serial.h"
+hardware_drivers::MockSerial serial_port{"/dev/ttyACM0"};
+#else
 // Dependency injection of the serial port happens at the link-time of the
 // binary.
 asio::io_service io;
 asio::serial_port serial_port{io};
+#endif
 
 // Dependency injection of the camera capture message router happens at the
 // link-time of the binary.

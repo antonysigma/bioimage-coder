@@ -8,6 +8,7 @@ message_router_lib = static_library('message-router',
         common_inc,
     ],
     dependencies: [
+        mock_serial_dep,
         fmt_dep,
     ]
 )
@@ -22,7 +23,9 @@ message_router_dep = declare_dependency(
     compile_args: [
         '-DUSING_FIBER',
     ],
-    dependencies: span_dep,
+    dependencies: [
+        span_dep,
+    ],
 )
 
 frame_capture_card_dep = declare_dependency(
