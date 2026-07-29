@@ -37,7 +37,8 @@ main() {
         fiber{imageCaptureWorker, 3, std::ref(image_capture_handlers[3]), std::ref(write_queue)}};
 
     fiber executor_task{bioimageExecutorTask};
-    fiber write_task{fileWriteWorker, std::ref(write_queue)};
+
+    std::thread write_task{fileWriteWorker, std::ref(write_queue)};
 
     // Not required if we never calls async_read or async_write.
     // io.run();

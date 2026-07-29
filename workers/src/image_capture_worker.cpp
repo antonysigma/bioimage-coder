@@ -59,7 +59,8 @@ captureFrom24Cameras(const uint8_t board_id, FrameCaptureCard<U>& capture_card,
         std::vector<uint8_t> captured_image(camera::n_pixels);
         std::swap(captured_image, image_buffer);
 
-        write_queue.push(WriteMessage{
+        write_queue.push(fiber_messages::write::command_t{
+            std::in_place_type<WriteMessage>,
             board_id,
             ret,
             std::move(captured_image),
@@ -165,7 +166,8 @@ execute(const uint8_t board_id, FrameCaptureCard<U>& capture_card,
         // If time intergration is complete, transmit the frame of the corresponding camera once and
         // only once.
         if (++frame_count == n_frames) {
-            write_queue.push(fiber_messages::write::fluorescence_frame_t{
+            write_queue.push(fiber_messages::write::command_t{
+                std::in_place_type<fiber_messages::write::fluorescence_frame_t>,
                 board_id,
                 cam_id,
                 capture_command.zpos,

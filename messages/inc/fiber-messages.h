@@ -91,12 +91,22 @@ using queue_t = boost::fibers::buffered_channel<command_t>;
 namespace write {
 using frame_capture_card::frame_metadata_t;
 
+#define MOVE_ONLY(struct_name)                           \
+    constexpr struct_name() = default;                   \
+                                                         \
+    struct_name(const struct_name&) = delete;            \
+    struct_name& operator=(const struct_name&) = delete; \
+                                                         \
+    struct_name(struct_name&&) noexcept = default;       \
+    struct_name& operator=(struct_name&&) noexcept = default
+
 struct dark_frame_t {
     uint8_t board_id{};
     uint8_t cam_id{};
     std::vector<uint8_t> image_frame{};
 
-    constexpr dark_frame_t() = default;
+    MOVE_ONLY(dark_frame_t);
+
     dark_frame_t(uint8_t b, frame_metadata_t m, std::vector<uint8_t>&& i)
         : board_id{b}, cam_id{m.cam_id}, image_frame{i} {}
 };
@@ -107,7 +117,8 @@ struct fpm_frame_t {
     uint8_t led_id{};
     std::vector<uint8_t> image_frame{};
 
-    constexpr fpm_frame_t() = default;
+    MOVE_ONLY(fpm_frame_t);
+
     fpm_frame_t(uint8_t b, frame_metadata_t m, std::vector<uint8_t>&& i)
         : board_id{b}, cam_id{m.cam_id}, led_id{m.led_id}, image_frame{i} {}
 };
@@ -118,8 +129,17 @@ struct fluorescence_frame_t {
     int16_t zpos{};
     channel_t ch{EGFP};
     std::vector<uint16_t> image_frame{};
+
+    MOVE_ONLY(fluorescence_frame_t);
+
+    fluorescence_frame_t(uint8_t b, uint8_t c, int16_t z, channel_t ch, std::vector<uint16_t>&& i)
+        : board_id{b}, cam_id{c}, zpos{z}, image_frame{i} {}
 };
+
 using command_t = std::variant<dark_frame_t, fpm_frame_t, fluorescence_frame_t>;
+static_assert(std::is_move_constructible_v<command_t>);
+static_assert(std::is_move_assignable_v<command_t>);
+
 using queue_t = boost::fibers::buffered_channel<command_t>;
 
 }  // namespace write
