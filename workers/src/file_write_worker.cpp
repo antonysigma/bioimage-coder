@@ -9,8 +9,9 @@ using fiber_messages::write::dark_frame_t;
 using fiber_messages::write::fluorescence_frame_t;
 using fiber_messages::write::fpm_frame_t;
 
+namespace workers {
 void
-fileWriteWorker(fiber_messages::write::queue_t& write_queue) {
+FileWrite::eventLoop() {
     using namespace std::string_view_literals;
     constexpr auto success = boost::fibers::channel_op_status::success;
 
@@ -41,3 +42,4 @@ fileWriteWorker(fiber_messages::write::queue_t& write_queue) {
 
     std::puts("[ ] Closing file worker\n");
 }
+}  // namespace workers

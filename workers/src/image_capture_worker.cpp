@@ -12,6 +12,7 @@
 //
 #include <nonstd/span.hpp>
 
+#include "file_write_worker.h"
 #include "frame-capture-card.h"
 #include "mock_usb.h"
 
@@ -225,9 +226,10 @@ execute(const uint8_t board_id, FrameCaptureCard<U>& capture_card,
 }
 }  // namespace
 
+namespace workers {
+template <uint8_t usb_id, class FileWriterWorker>
 void
-imageCaptureWorker(const uint8_t usb_id, fiber_messages::capture::queue_t& capture_queue,
-                   fiber_messages::write::queue_t& write_queue) {
+ImageCapture<usb_id, FileWriterWorker>::eventLoop() {
     // Initialize camera board
     message_router::FrameCaptureCard<MockUSB> capture_card{usb_id};
     const auto board_id = capture_card.readBoardID();
@@ -241,7 +243,7 @@ imageCaptureWorker(const uint8_t usb_id, fiber_messages::capture::queue_t& captu
                 using T = std::decay_t<decltype(capture_command)>;
                 if constexpr (std::is_same_v<T, dark_frame_t> || std::is_same_v<T, fpm_frame_t> ||
                               std::is_same_v<T, fluorescence_frame_t>) {
-                    execute(board_id, capture_card, capture_command, write_queue);
+                    execute(board_id, capture_card, capture_command, FileWriterWorker::write_queue);
                 } else {
                     execute(board_id, capture_card, capture_command);
                 }
@@ -251,9 +253,15 @@ imageCaptureWorker(const uint8_t usb_id, fiber_messages::capture::queue_t& captu
 
     if (board_id == 0) {
         std::puts("[0] No more instrument control commands. Closing the file worker...\n");
-        write_queue.close();
+        FileWriterWorker::write_queue.close();
     }
 
     // Need to capture the board_id value from the stack before it vanishes from the stack.
     [=]() { fmt::print(FMT_STRING("[{:d}] Closing image capture worker\n"), board_id); }();
 }
+
+template class ImageCapture<0, FileWrite>;
+template class ImageCapture<1, FileWrite>;
+template class ImageCapture<2, FileWrite>;
+template class ImageCapture<3, FileWrite>;
+}  // namespace workers

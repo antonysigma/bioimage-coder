@@ -5,5 +5,10 @@
 
 #include "fiber-messages.h"
 
-void imageCaptureWorker(const uint8_t board_id, fiber_messages::capture::queue_t& capture_queue,
-                        fiber_messages::write::queue_t& write_queue);
+namespace workers {
+template <uint8_t board_id, class FileWriter>
+struct ImageCapture {
+    static inline fiber_messages::capture::queue_t capture_queue{2};
+    static void eventLoop();
+};
+}  // namespace workers

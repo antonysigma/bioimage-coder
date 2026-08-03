@@ -1,7 +1,6 @@
 capture_images_exe = executable('capture-images',
     sources: [
         'main.cpp',
-        'master_task.cpp',
     ],
     include_directories: [
         'amgen2019-full',
